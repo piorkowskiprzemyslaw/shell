@@ -1,22 +1,5 @@
-/*
- * processManagement.h
- *
- *  Created on: 23 maj 2014
- *      Author: przemek
- */
 
-#ifndef PROCESSMANAGEMENT_H_
-#define PROCESSMANAGEMENT_H_
-
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <termios.h>
-#include <sys/wait.h>
-
-#include "globalVariables.h"
+#include <processManagement/processManagement.h>
 
 /**
  * Znajdź pracę o zadanym pgid
@@ -80,6 +63,7 @@ void free_job( job * j )
 		free(p);
 		p = next;
 	}
+	free(j);
 }
 
 /**
@@ -346,6 +330,3 @@ void launch_job( job *j, int foreground )
 		put_job_int_background(j , 0);
 	}
 }
-
-
-#endif /* PROCESSMANAGEMENT_H_ */

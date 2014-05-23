@@ -1,21 +1,15 @@
-/*
- * initialization.cpp
- *
- *  Created on: 22 maj 2014
- *      Author: przemek
- */
+#include <util/initialization.h>
 
-#ifndef INITIALIZATION_H_
-#define INITIALIZATION_H_
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <termios.h>
-#include <unistd.h>
-#include <signal.h>
-
-#include "globalVariables.h"
-#include "processManagement.h"
+char * userName;
+char * mashineName;
+char * actualDir;
+size_t maxUserInputSize;
+char * inputString;
+pid_t shell_pgid;
+struct termios shell_tmodes;
+int shell_terminal;
+int is_shell_interactive;
+job * first_job;
 
 /**
  * Inicjalizacja shella
@@ -81,5 +75,3 @@ void refreshVariables()
 	getcwd(fullDir, 128);
 	strcpy(actualDir, fullDir + strlen(home));
 }
-
-#endif /* INITIALIZATION_H_ */

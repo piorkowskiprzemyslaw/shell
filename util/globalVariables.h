@@ -32,25 +32,25 @@ typedef struct job {
 } job;
 
 /* Nazwa użytkownika */
-char * userName;
+extern char * userName;
 /* Nazwa maszyny */
-char * mashineName;
+extern char * mashineName;
 /* Akutalna relatywna scieżka do HOME */
-char * actualDir;
+extern char * actualDir;
 /* Maksymalna wielkość inputu */
-size_t maxUserInputSize;
+extern size_t maxUserInputSize;
 /* Wejscie pobierane od użytkownika */
-char * inputString;
+extern char * inputString;
 /* Numer grupy procesów shella */
-pid_t shell_pgid;
+extern pid_t shell_pgid;
 /* Początkowe ustawienia terminala */
-struct termios shell_tmodes;
+extern struct termios shell_tmodes;
 /* Deskryptor terminala */
-int shell_terminal;
+extern int shell_terminal;
 /* Czy shell działa w trybie interaktywnym */
-int is_shell_interactive;
+extern int is_shell_interactive;
 /* Lista jobów */
-job * first_job;
+extern job * first_job;
 
 
 #endif /* GLOBALVARIABLES_H_ */

@@ -16,9 +16,9 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "globalVariables.h"
-#include "initialization.h"
-#include "processManagement.h"
+#include <util/globalVariables.h>
+#include <util/initialization.h>
+#include <processManagement/processManagement.h>
 
 /**
  * To jest do wywalenia, pokazuje tylko jak korzystać z tego zarządzania procesami.
