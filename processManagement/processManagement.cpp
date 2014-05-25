@@ -49,7 +49,9 @@ int job_is_completed(job * j)
  */
 void format_job_info( job *j, const char *status )
 {
-	fprintf(stderr, "%ld (%s): %s\n", (long)j->pgid, status, j->command );
+	if(!j->foreground) {
+		fprintf(stderr, "%ld (%s): %s\n", (long)j->pgid, status, j->command );
+	}
 }
 
 /**
@@ -63,6 +65,7 @@ void free_job( job * j )
 		free(p);
 		p = next;
 	}
+	free(j->command);
 	free(j);
 }
 
@@ -75,6 +78,7 @@ int mark_process_status(pid_t pid, int status)
 {
 	job *j;
 	process *p;
+
 
 	if( pid > 0 ) {
 
@@ -177,6 +181,8 @@ void wait_for_job( job * j )
  */
 void put_job_in_foreground( job * j, int cont )
 {
+	j->foreground = 1;
+
 	// ustaw prace jako pierwszoplanową
 	tcsetpgrp( shell_terminal, j->pgid );
 
@@ -188,7 +194,7 @@ void put_job_in_foreground( job * j, int cont )
 		}
 	}
 
-	// Czekaj aż procesy w pracy zareportują o stanie
+	// Czekaj aż procesy w pracy się zakończą
 	wait_for_job(j);
 
 	// Przenieś shell z powrotem do pierwszego planu
@@ -205,6 +211,8 @@ void put_job_in_foreground( job * j, int cont )
  */
 void put_job_int_background( job *j, int cont )
 {
+	j->foreground = 0;
+
 	if( cont ) {
 		if( kill( - j->pgid, SIGCONT ) < 0 ) {
 			perror("kill(SIGCONT) error");
@@ -268,6 +276,7 @@ void launch_job( job *j, int foreground )
 	process * p;
 	pid_t pid;
 	int pipeIO[2], infile, outfile;
+	j->foreground = foreground;
 
 	infile = j->stdin;
 	for( p = j->first_process ; p ; p=p->next ){
@@ -320,7 +329,7 @@ void launch_job( job *j, int foreground )
 		infile = pipeIO[0];
 	}
 
-	//format_job_info( j , "launched");
+	format_job_info( j , "launched");
 
 	if( !is_shell_interactive ) {
 		wait_for_job(j);

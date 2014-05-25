@@ -28,12 +28,24 @@ void exampleRun(char * arg)
 	//int pfile = open("outputTest.txt", O_CREAT | O_RDWR , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
 	process * p = ( process * ) malloc( sizeof(process) );
 	job * j = ( job * ) malloc( sizeof(job) );
-	j->command = arg;
+	j->pgid = 0 ;
+	j->command = (char *)malloc(sizeof(char) * (strlen(arg) - 1));
+
+	for(int i = 0 ; i + 1 < strlen(arg) ; ++i){
+		j->command[i] = arg[i];
+	}
+
+	j->next = NULL;
 	j->first_process = p;
+	j->notified = 0;
 	j->stdin = STDIN_FILENO;
 	j->stdout = STDOUT_FILENO; /* może być też pfile jeśli chcemy zrobić przekierwoanie do pliku. */
 	j->stderr = STDERR_FILENO;
 	p->next = NULL;
+	p->completed = 0;
+	p->stopped = 0;
+	p->pid = 0;
+	p->status = 0;
 
 	// usunięcie niepotrzebnego znaku nowej linii.
 	for( int i = 0 ; arg[i] ; ++i ) {
@@ -44,8 +56,16 @@ void exampleRun(char * arg)
 	char * execArgs[] = { arg, NULL };
 	p->argv = execArgs;
 
+	job * actualJob;
+	if(first_job != NULL) {
+		for(actualJob = first_job ; actualJob->next ; actualJob = actualJob->next){ }
+		actualJob->next = j;
+	} else {
+		first_job = j;
+	}
+
 	// jeśli proces ma być w background to drugim argumentem jest 0.
-	launch_job(j, 1);
+	launch_job(j, 0);
 }
 
 int main(void)
@@ -57,7 +77,8 @@ int main(void)
 
 	while( true ) {
 		refreshVariables();
-		printf("%s@%s:~%s$ ", userName, mashineName, actualDir);
+		do_job_notification();
+		printf("%s@%s:%s$ ", userName, mashineName, actualDir);
 		fflush(stdin);
 		bzero(inputString, maxUserInputSize);
 		getline(&inputString, &maxUserInputSize, stdin);
@@ -68,6 +89,7 @@ int main(void)
 
 		if( strcmp(inputString, "\n") != 0 )
 			exampleRun(inputString);
+
 	}
 
 }

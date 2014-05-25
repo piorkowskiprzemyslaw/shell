@@ -26,6 +26,7 @@ typedef struct job {
 	pid_t pgid;
 	char notified;
 	struct termios tmodes;
+	int foreground;
 	int stdin;
 	int stdout;
 	int stderr;

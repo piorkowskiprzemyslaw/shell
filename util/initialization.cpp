@@ -39,7 +39,9 @@ void init()
 		signal(SIGTSTP, SIG_IGN);
 		signal(SIGTTIN, SIG_IGN);
 		signal(SIGTTOU, SIG_IGN);
-		signal(SIGCHLD, SIG_IGN);
+		//signal(SIGCHLD, SIG_IGN);
+
+		//signal(SIGCHLD, signalHandler);
 
 		shell_pgid = getpid();
 		if( setpgid( shell_pgid, shell_pgid ) < 0 ) {
@@ -62,7 +64,7 @@ void signalHandler(int signo)
 }
 
 /**
- * Zwraca aktualną ścieżke relatywną do HOME
+ * aktualizuje wszystkie zmienne pokazywane przed znakiem zachęty
  */
 void refreshVariables()
 {
@@ -73,5 +75,10 @@ void refreshVariables()
 	char * home = getenv("HOME");
 	char fullDir[128];
 	getcwd(fullDir, 128);
-	strcpy(actualDir, fullDir + strlen(home));
+	if( strstr(fullDir, home) != NULL ){
+		actualDir[0] = '~';
+		strcpy(actualDir + 1, fullDir + strlen(home));
+	} else {
+		strcpy(actualDir, fullDir);
+	}
 }
