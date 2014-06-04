@@ -15,10 +15,14 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
+#include <map>
+#include <string>
 
 #include <util/globalVariables.h>
 #include <util/initialization.h>
 #include <processManagement/processManagement.h>
+#include <variables/variables.h>
+#include <commands/commands.h>
 
 /**
  * To jest do wywalenia, pokazuje tylko jak korzystać z tego zarządzania procesami.
@@ -91,6 +95,5 @@ int main(void)
 			exampleRun(inputString);
 
 	}
-
 }
 

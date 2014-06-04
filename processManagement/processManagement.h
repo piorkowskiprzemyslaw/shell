@@ -15,6 +15,8 @@
 #include <errno.h>
 #include <termios.h>
 #include <sys/wait.h>
+#include <map>
+#include <string>
 
 #include <util/globalVariables.h>
 

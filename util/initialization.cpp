@@ -10,6 +10,7 @@ struct termios shell_tmodes;
 int shell_terminal;
 int is_shell_interactive;
 job * first_job;
+std::map<std::string,std::string> variables;
 
 /**
  * Inicjalizacja shella

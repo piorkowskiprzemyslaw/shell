@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <string.h>
 #include <pwd.h>
+#include <map>
+#include <string>
 
 #include <util/globalVariables.h>
 #include <processManagement/processManagement.h>
