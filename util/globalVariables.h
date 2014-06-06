@@ -52,6 +52,7 @@ extern int shell_terminal;
 extern int is_shell_interactive;
 /* Lista jobów */
 extern job * first_job;
-
+/* Mapa zmiennych shella */
+extern std::map<std::string,std::string> variables;
 
 #endif /* GLOBALVARIABLES_H_ */
