@@ -39,6 +39,14 @@ struct pipe_s
 	std::string appname;
     std::string filename;
 };
+struct app;
+typedef boost::variant<std::string, boost::recursive_wrapper<std::vector<app> > > arg_node;
+
+struct app
+{
+	std::string appname;
+	std::vector<arg_node> args;
+};
 
 BOOST_FUSION_ADAPT_STRUCT(
     pipe_s,
@@ -46,76 +54,106 @@ BOOST_FUSION_ADAPT_STRUCT(
     (std::string, filename)
 )
 
-typedef boost::variant<pipe_s, std::string> pipe_node;
+BOOST_FUSION_ADAPT_STRUCT(
+	app,
+	(std::string, appname)
+	(std::vector<arg_node>, args)
+)
+
+//typedef boost::variant<pipe_s, app> pipe_node;
 
 template <typename Iterator>
-struct parser : qi::grammar<Iterator, std::vector<pipe_node>(), ascii::space_type>
+struct parser : qi::grammar<Iterator, std::vector<app>(), ascii::space_type>
 {
-    parser() : parser::base_type(start)
+    parser() : parser::base_type(app_group)
     {
         using qi::lit;
         using qi::lexeme;
         using ascii::char_;
 
-		string %= lexeme[+(char_ - '|')];
-		fpipe %= lexeme[+(char_ - char_(">|"))] >> ">>" >> string;
-		fpipe_node %= fpipe | string;
 
-		start %= 
-			fpipe_node
-			>> +('|' >> fpipe_node)
-			;
+		using qi::on_error;
+		using qi::on_success;
+		using qi::fail;
+		//using ascii::string;
+		using namespace qi::labels;
+
+		using phoenix::construct;
+		using phoenix::val;
+	
+		string %= lexeme[+char_("a-zA-Z/.*")];
+
+		fapp %= string >> args;
+		args %= *farg_node;
+		farg_node %= string | '`' >> app_group >> '`';
+		app_group %= fapp >> *('|' >> fapp);
+
     }
 
+ 
+
     qi::rule<Iterator, std::string(), ascii::space_type> string;
-    qi::rule<Iterator, pipe_s(), qi::locals<std::string>, ascii::space_type> fpipe;
-    qi::rule<Iterator, pipe_node(), ascii::space_type> fpipe_node;
-    qi::rule<Iterator, std::vector<pipe_node>(), ascii::space_type> start;
+	qi::rule<Iterator, arg_node(), ascii::space_type> farg_node;
+    qi::rule<Iterator, std::vector<arg_node>(), ascii::space_type> args;
+	qi::rule<Iterator, app(), ascii::space_type> fapp;
+    qi::rule<Iterator, std::vector<app>(), ascii::space_type> app_group;
 };
 
-void run(std::vector<pipe_node> &apps) {
+void run(std::vector<app> &apps) {
 	char *arg;
 
-	int outfile = STDOUT_FILENO;
-	if(pipe_s *s = boost::get<pipe_s>(&apps[0])) {
-		arg = (char*)malloc(s->appname.size());
-		s->appname.copy(arg, s->appname.size()-1); //na koncu jest spacja, a to bylo na szybko
-		printf("%s\n", s->filename.c_str());
-		outfile = open(s->filename.c_str(), O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
-		if(outfile == -1)
-			perror("open outfile: ");
-	} 
-	if(std::string *s = boost::get<std::string>(&apps[0])) {
-		if(*s == "exit")
-			exit(0);
-		arg = (char*)malloc(s->size()+2);
-		s->copy(arg, s->size()+1);
-	} 
-
-	process * p = ( process * ) malloc( sizeof(process) );
 	job * j = ( job * ) malloc( sizeof(job) );
 	j->pgid = 0 ;
-	j->command = (char *)malloc(sizeof(char) * (strlen(arg)));
+	j->command = (char *)malloc(sizeof(char) * (1));
 
-	for(size_t i = 0 ; i < strlen(arg) ; ++i){
-		j->command[i] = arg[i];
+	for(int i = 0 ; i < strlen(arg) ; ++i){
+		//j->command[i] = arg[i];
+		j->command[i] = 'a';
 	}
+	j->command[1] = 0;
 
 	j->next = NULL;
-	j->first_process = p;
+
 	j->notified = 0;
 	j->stdin = STDIN_FILENO;
-	//j->stdout = STDOUT_FILENO; /* może być też pfile jeśli chcemy zrobić przekierwoanie do pliku. */
-	j->stdout = outfile;
+	j->stdout = STDOUT_FILENO; /* może być też pfile jeśli chcemy zrobić przekierwoanie do pliku. */
 	j->stderr = STDERR_FILENO;
-	p->next = NULL;
-	p->completed = 0;
-	p->stopped = 0;
-	p->pid = 0;
-	p->status = 0;
 
-	char * execArgs[] = { arg, NULL };
-	p->argv = execArgs;
+	
+	process * prev = NULL;
+	for(auto l : apps) {
+		if(l.appname == "exit")
+			exit(0);
+		process * p = ( process * ) malloc( sizeof(process) );
+		p->next = NULL;
+		p->completed = 0;
+		p->stopped = 0;
+		p->pid = 0;
+		p->status = 0;
+
+		p->argv = (char**)malloc((l.args.size()+2)*sizeof(char*));
+		p->argv[l.args.size()+1] = NULL;
+		if(prev != NULL) 
+			prev->next = p;
+		else  
+			j->first_process = p;
+
+
+		prev = p;
+		p->argv[0] = (char*)malloc(l.appname.size()+1);
+		l.appname.copy(p->argv[0], l.appname.size()); 
+		int i = 1;
+		for(auto s : l.args) {
+			if(std::string *str = boost::get<std::string>(&s)) {
+				p->argv[i] = (char*)malloc(str->size()+1);
+				str->copy(p->argv[i++], str->size());
+			} else if(std::vector<app> *a = boost::get<std::vector<app>>(&s))  {
+			}
+
+		}	
+	}
+
+
 
 	job * actualJob;
 	if(first_job != NULL) {
@@ -127,8 +165,22 @@ void run(std::vector<pipe_node> &apps) {
 
 	// jeśli proces ma być w background to drugim argumentem jest 0.
 	launch_job(j, 1);
-	if(outfile != STDOUT_FILENO) 
-		close(outfile);
+}
+
+
+void print_apps(std::vector<app> apps) {
+	for(auto l : apps) {
+		std::cout << l.appname << std::endl;
+		for(auto s : l.args) {
+			if(std::string *str = boost::get<std::string>(&s)) {
+				std::cout << "  " << *str << std::endl;
+			} else if(std::vector<app> *a = boost::get<std::vector<app>>(&s))  {
+				std::cout << "----argument----" << std::endl;
+				print_apps(*a);
+				std::cout << "----------------" << std::endl;
+			}
+		}	
+	}
 }
 
 int main(int argc, char **argv) {
@@ -140,7 +192,7 @@ int main(int argc, char **argv) {
 
     parser g;
 
-	std::vector<pipe_node> apps;
+	std::vector<app> apps;
 
 	std::string buffer;
 
@@ -156,16 +208,11 @@ int main(int argc, char **argv) {
 		std::string::const_iterator start = buffer.begin();
 		std::string::const_iterator end = buffer.end();
 		phrase_parse(start, end, g, space, apps);
+		if(start != end) 
+			std::cout << "not complete" << std::endl;
 
+		print_apps(apps);
 		run(apps);
-/*		for(auto l : apps) {
-			if(std::string *s = boost::get<std::string>(&l)) {
-				std::cout << *s << std::endl;
-			} 
-			if(pipe_s *s = boost::get<pipe_s>(&l)) {
-				std::cout << s->appname << " wyjscie do: " << s->filename << std::endl;
-				}
-				}*/
 	}
 	return 0;
 }
