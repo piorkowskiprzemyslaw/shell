@@ -18,8 +18,7 @@ std::map<std::string,std::string> variables;
 void init()
 {
 	first_job = NULL;
-	maxUserInputSize = 128;
-	inputString = (char*)malloc(sizeof(char) * maxUserInputSize);
+	maxUserInputSize = 0;
 	struct passwd * pass = getpwuid(getuid());
 	mashineName = (char*)malloc(sizeof(char) * 64);
 	actualDir = (char*)malloc(sizeof(char) *128);
@@ -40,9 +39,6 @@ void init()
 		signal(SIGTSTP, SIG_IGN);
 		signal(SIGTTIN, SIG_IGN);
 		signal(SIGTTOU, SIG_IGN);
-		//signal(SIGCHLD, SIG_IGN);
-
-		//signal(SIGCHLD, signalHandler);
 
 		shell_pgid = getpid();
 		if( setpgid( shell_pgid, shell_pgid ) < 0 ) {
@@ -54,14 +50,6 @@ void init()
 		//zapisanie domyslnych wartości ustawień terminala
 		tcgetattr(shell_terminal, &shell_tmodes);
 	}
-}
-
-/**
- * Obsługa SIGCHLD
- */
-void signalHandler(int signo)
-{
-	do_job_notification();
 }
 
 /**

@@ -27,11 +27,6 @@
 void init();
 
 /**
- * Obsługa SIGCHLD
- */
-void signalHandler(int signo);
-
-/**
  * Zwraca aktualną ścieżke relatywną do HOME
  */
 void refreshVariables();

@@ -97,7 +97,7 @@ void run(std::vector<pipe_node> &apps) {
 	j->pgid = 0 ;
 	j->command = (char *)malloc(sizeof(char) * (strlen(arg)));
 
-	for(int i = 0 ; i < strlen(arg) ; ++i){
+	for(size_t i = 0 ; i < strlen(arg) ; ++i){
 		j->command[i] = arg[i];
 	}
 

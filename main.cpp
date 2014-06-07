@@ -23,6 +23,8 @@
 #include <processManagement/processManagement.h>
 #include <variables/variables.h>
 #include <commands/commands.h>
+#include <parser/parser.h>
+#include <interpreter/interpreter.h>
 
 /**
  * To jest do wywalenia, pokazuje tylko jak korzystać z tego zarządzania procesami.
@@ -35,7 +37,7 @@ void exampleRun(char * arg)
 	j->pgid = 0 ;
 	j->command = (char *)malloc(sizeof(char) * (strlen(arg) - 1));
 
-	for(int i = 0 ; i + 1 < strlen(arg) ; ++i){
+	for(size_t i = 0 ; i + 1 < strlen(arg) ; ++i){
 		j->command[i] = arg[i];
 	}
 
@@ -69,30 +71,30 @@ void exampleRun(char * arg)
 	}
 
 	// jeśli proces ma być w background to drugim argumentem jest 0.
-	launch_job(j, 0);
+	launch_job(j, 1);
 }
 
 int main(void)
 {
-	char *inputString;
-	size_t maxUserInputSize;
-
 	init();
 
 	while( true ) {
+		parser::tokens tokens;
 		refreshVariables();
 		do_job_notification();
-		printf("%s@%s:%s$ ", userName, mashineName, actualDir);
+		printf("%s@%s:%s# ", userName, mashineName, actualDir);
 		fflush(stdin);
-		bzero(inputString, maxUserInputSize);
+		memset(inputString, 0, maxUserInputSize);
 		getline(&inputString, &maxUserInputSize, stdin);
 
 		if( strcmp(inputString, "exit\n") == 0 ) {
 			break;
 		}
 
-		if( strcmp(inputString, "\n") != 0 )
-			exampleRun(inputString);
+		if( strcmp(inputString, "\n") != 0 && parser::parse(inputString,tokens) ) {
+			interpreter::mini_shell_printer printer;
+			printer(tokens);
+		}
 
 	}
 }
