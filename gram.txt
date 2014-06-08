@@ -20,7 +20,8 @@
                 |  <pipeline> '&' <simple_list>
                 |  <pipeline> ';' <simple_list>
                     
-<pipeline> ::= <command> '|' <pipeline>
+<pipeline> ::= <command> '|' <pipeline> 
+			 | <pipeline>
 
 <command> ::=  <simple_command>
             |  <subshell>
@@ -34,7 +35,7 @@
                           |  <redirection>                   
                           
 <redirection_list> ::= <redirection> <redirection_list>
-                    |  <redirection>                          
+					 | <redirection>                         
                           
 <redirection> ::=  '>' <word>
                 |  '<' <word>

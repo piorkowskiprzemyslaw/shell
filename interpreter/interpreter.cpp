@@ -9,6 +9,11 @@
 
 namespace interpreter {
 
+	void mini_shell_printer::operator()(const parser::SUBSHELL& subshell ) const
+	{
+		std::cout << "subshell: " << subshell.content << std::endl;
+	}
+
 	void mini_shell_printer::operator ()(const parser::ASSIGNMENT_WORD & assignment) const
 	{
 		std::cout << "var_name = " << assignment.var_name << " var_val = ";
@@ -20,6 +25,44 @@ namespace interpreter {
 		std::cout << "redirection ";
 		boost::apply_visitor(redirection_type_printer(), redirection.type);
 	}
+
+	void mini_shell_printer::operator()(const parser::REDIRECTION_LIST& redirection_list) const
+	{
+		this->operator ()(redirection_list.redirection);
+        BOOST_FOREACH(const parser::REDIRECTION_LIST_NODE& node, redirection_list.futher_redirections)
+        {
+            boost::apply_visitor(redirection_list_printer(), node);
+        }
+	}
+
+	void mini_shell_printer::operator()(const parser::SIMPLE_COMMAND_ELEMENT& simple_command_element) const
+	{
+		boost::apply_visitor(simple_command_element_printer(), simple_command_element );
+	}
+
+	void mini_shell_printer::operator()(const parser::SIMPLE_COMMAND& simple_command) const
+	{
+		this->operator ()(simple_command.simple_command_element);
+		BOOST_FOREACH(const parser::SIMPLE_COMMAND_NODE& node, simple_command.futher_simple_commands)
+		{
+			boost::apply_visitor(simple_command_printer(), node);
+		}
+	}
+
+	void mini_shell_printer::operator()(const parser::COMMAND& command) const
+	{
+		boost::apply_visitor(command_type_printer(), command);
+	}
+
+	void mini_shell_printer::operator()(const parser::PIPELINE& pipeline) const
+	{
+		this->operator ()(pipeline.command);
+		BOOST_FOREACH(const parser::PIPELINE_NODE& node, pipeline.pipeline_node)
+		{
+			boost::apply_visitor(pipeline_sequence_printer(), node);
+		}
+	}
+
 
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
@@ -39,11 +82,6 @@ namespace interpreter {
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
 	{
 		std::cout << "quote: " << quote.content << std::endl;
-	}
-
-	void string_expr_printer::operator()(const parser::BRACKETS& brackets) const
-	{
-		std::cout << "brackets: " << brackets.content << std::endl;
 	}
 
 	void string_expr_printer::operator()(const parser::DOLLAR& dollar) const
@@ -73,6 +111,67 @@ namespace interpreter {
 	{
 		std::cout << "redirection_number_out_file number : " << redirection.number << " file : ";
 		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+	}
+
+	void redirection_list_printer::operator ()(const parser::REDIRECTION & redirection ) const
+	{
+		mini_shell_printer()(redirection);
+	}
+
+	void redirection_list_printer::operator ()(const parser::REDIRECTION_LIST & redirection_list ) const
+	{
+		mini_shell_printer()(redirection_list);
+	}
+
+	void simple_command_element_printer::operator()(const parser::STRING_EXPR& string_expr) const
+	{
+		boost::apply_visitor(string_expr_printer(), string_expr);
+	}
+
+	void simple_command_element_printer::operator()(const parser::ASSIGNMENT_WORD& assignment_word) const
+	{
+		mini_shell_printer()(assignment_word);
+	}
+
+	void simple_command_element_printer::operator()(const parser::REDIRECTION& redirection) const
+	{
+		mini_shell_printer()(redirection);
+	}
+
+	void simple_command_printer::operator ()(const parser::SIMPLE_COMMAND& simple_command) const
+	{
+		mini_shell_printer()(simple_command);
+	}
+
+	void simple_command_printer::operator ()(const parser::SIMPLE_COMMAND_ELEMENT& simple_command_element) const
+	{
+		mini_shell_printer()(simple_command_element);
+	}
+
+	void command_type_printer::operator ()(const parser::SIMPLE_COMMAND& simple_command) const
+	{
+		mini_shell_printer()(simple_command);
+	}
+
+	void command_type_printer::operator ()(const parser::SUBSHELL& subshell) const
+	{
+		mini_shell_printer()(subshell);
+	}
+
+	void command_type_printer::operator ()(const parser::SUBSHELL_REDIRECTION_LIST& subshell_redirection_list) const
+	{
+		mini_shell_printer()(subshell_redirection_list.subshell);
+		mini_shell_printer()(subshell_redirection_list.redirection_list);
+	}
+
+	void pipeline_sequence_printer::operator() (const parser::COMMAND& command) const
+	{
+		mini_shell_printer()(command);
+	}
+
+	void pipeline_sequence_printer::operator()(const parser::PIPELINE& pipeline) const
+	{
+		mini_shell_printer()(pipeline);
 	}
 }
 

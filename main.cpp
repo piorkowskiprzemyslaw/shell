@@ -79,7 +79,7 @@ int main(void)
 	init();
 
 	while( true ) {
-		parser::REDIRECTION tokens;
+		parser::PIPELINE tokens;
 		refreshVariables();
 		do_job_notification();
 		printf("%s@%s:%s# ", userName, mashineName, actualDir);
