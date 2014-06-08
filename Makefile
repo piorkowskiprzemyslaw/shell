@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS= -c -Wall -pedantic -I $(CURDIR) -std=c++0x
 
-all: shell parser_o
+all: shell
 
 shell: main.o ./util/initialization.o ./processManagement/processManagement.o ./variables/variables.o ./commands/commands.o ./parser/parser.o ./interpreter/interpreter.o
 	$(CC) $(LFAGS) main.o ./util/initialization.o ./processManagement/processManagement.o ./variables/variables.o ./commands/commands.o ./parser/parser.o ./interpreter/interpreter.o -o shell
