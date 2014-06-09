@@ -5,12 +5,14 @@
  *      Author: przemek
  */
 
-#include <interpreter/interpreter.h>
-#include <processManagement/processManagement.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#include <interpreter/interpreter.h>
+#include <processManagement/processManagement.h>
+#include <variables/variables.h>
 
 namespace interpreter {
 
@@ -21,8 +23,7 @@ namespace interpreter {
 
 	void mini_shell_printer::operator ()(const parser::ASSIGNMENT_WORD & assignment) const
 	{
-		std::cout << "var_name = " << assignment.var_name << " var_val = ";
-		boost::apply_visitor(string_expr_printer(), assignment.var_val);
+		setVariable(assignment.var_name.c_str(), boost::get<std::string>(assignment.var_val).c_str());
 	}
 
 	void mini_shell_printer::operator()(const parser::REDIRECTION& redirection) const
@@ -47,9 +48,10 @@ namespace interpreter {
 
 	void mini_shell_printer::operator()(const parser::SIMPLE_COMMAND& simple_command) const
 	{
-		process * p = create_process_in_last_job();
-		p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
-		printf("tworzenie procesu\n");
+		if(boost::get<parser::STRING_EXPR>(&simple_command.simple_command_element)) {
+			process * p = create_process_in_last_job();
+			p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
+		}
 		this->operator ()(simple_command.simple_command_element);
 		BOOST_FOREACH(const parser::SIMPLE_COMMAND_NODE& node, simple_command.futher_simple_commands)
 		{
@@ -104,7 +106,19 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::BACK_QUOTE& back_quote) const
 	{
-		std::cout << "back_quote: " << back_quote.content << std::endl;
+//		std::cout << "back_quote: " << back_quote.content << std::endl;
+/*		parser::SIMPLE_LIST tokens;
+		parser::parse(back_quote.content,tokens);
+		job * j = create_job();
+		interpreter::mini_shell_printer interpreter;
+		interpreter(tokens);
+		process *p = j->first_process;
+		while(p != NULL) {
+			printf("%s\n", p->argv[0]);
+			p = p->next;
+		}
+		launch_job(j, 1);*/
+
 	}
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
@@ -114,7 +128,15 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::DOLLAR& dollar) const
 	{
-		std::cout << "dollar: " << dollar.content << std::endl;
+		process *p = get_last_process();
+		int ind = 0;
+		while(p->argv[ind] != NULL)
+			ind++;
+		const char * var = getVariable(dollar.content.c_str());
+		p->argv[ind] = (char*)malloc((strlen(var)+1)*sizeof(char));
+		strcpy(p->argv[ind], var);
+//		dollar.content.copy(p->argv[ind], dollar.content.size()); 
+//		p->argv[ind][dollar.content.size()] = 0;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_IN_FILE & redirection) const
