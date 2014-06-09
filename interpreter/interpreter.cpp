@@ -5,12 +5,19 @@
  *      Author: przemek
  */
 
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include <interpreter/interpreter.h>
 #include <processManagement/processManagement.h>
+#include <variables/variables.h>
 
 namespace interpreter {
 
 	std::string expression_val;
+	bool assignment_flag = false;
 
 	void mini_shell_printer::operator()(const parser::SUBSHELL& subshell ) const
 	{
@@ -19,11 +26,13 @@ namespace interpreter {
 
 	void mini_shell_printer::operator ()(const parser::ASSIGNMENT_WORD & assignment) const
 	{
-		std::cout << "var_name = " << assignment.var_name << " var_val = ";
+		assignment_flag = true;
 		boost::apply_visitor(string_expr_printer(), assignment.var_val);
 		setVariable(assignment.var_name.c_str(), expression_val.c_str());
-		std::cout << "Curent Right side expr: " << getVariable(assignment.var_name.c_str()) << std::endl;
 		expression_val.clear();
+//		setVariable(assignment.var_name.c_str(), boost::get<std::string>(assignment.var_val).c_str());
+		assignment_flag=false;
+
 	}
 
 	void mini_shell_printer::operator()(const parser::REDIRECTION& redirection) const
@@ -48,9 +57,10 @@ namespace interpreter {
 
 	void mini_shell_printer::operator()(const parser::SIMPLE_COMMAND& simple_command) const
 	{
-		process * p = create_process_in_last_job();
-		p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
-		printf("tworzenie procesu\n");
+		if(boost::get<parser::STRING_EXPR>(&simple_command.simple_command_element)) {
+			process * p = create_process_in_last_job();
+			p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
+		}
 		this->operator ()(simple_command.simple_command_element);
 		BOOST_FOREACH(const parser::SIMPLE_COMMAND_NODE& node, simple_command.futher_simple_commands)
 		{
@@ -88,17 +98,19 @@ namespace interpreter {
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
 		//Set Expression
-		expression_val = text;
+		if (assignment_flag)
+		{
+			expression_val = text;
+			return;
+		}
 
-		printf("asdf\n");
 		process *p = get_last_process();
 		int ind = 0;
 		while(p->argv[ind] != NULL)
 			ind++;
 		p->argv[ind] = (char*)malloc((text.size()+1)*sizeof(char));
-		text.copy(p->argv[ind], text.size()); 
+		text.copy(p->argv[ind], text.size());
 		p->argv[ind][text.size()] = 0;
-		std::cout << "text: " << text << std::endl;
 	}
 
 	void string_expr_printer::operator()(const parser::NUMBER& number) const
@@ -109,7 +121,23 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::BACK_QUOTE& back_quote) const
 	{
-		std::cout << "back_quote: " << back_quote.content << std::endl;
+		parser::SIMPLE_LIST tokens;
+		parser::parse(back_quote.content,tokens);
+		job * j = create_job();
+		interpreter::mini_shell_printer interpreter;
+		interpreter(tokens);
+		process *p = get_last_process();
+		int pipe[2];
+		pipe2(pipe, O_NONBLOCK);
+		j->stdout = pipe[1];
+		char buffer[500];
+		launch_job(j, 1);
+		read(pipe[0], buffer, 500);
+		int ind = 0;
+		while(p->argv[ind] != NULL)
+			ind++;
+		p->argv[ind] = (char*)malloc((strlen(buffer)+1)*sizeof(char));
+		strcpy(p->argv[ind], buffer);
 	}
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
@@ -120,29 +148,47 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::DOLLAR& dollar) const
 	{
-		const char * value = getVariable(dollar.content.c_str());
-		if (value != NULL)
+		const char * var = getVariable(dollar.content.c_str());
+		if (assignment_flag)
 		{
-			expression_val = value;
+			if (var != NULL)
+				expression_val = var;
+			else
+			{
+				expression_val = "";
+				std::cerr << "Unset variable." << std::endl;
+			}
+			return;
 		}
-		else
-		{
-			expression_val = "";
-			std::cerr << "Unset variable." << std::endl;
-		}
-		std::cout << "dollar: " << dollar.content << std::endl;
+		process *p = get_last_process();
+		int ind = 0;
+		while(p->argv[ind] != NULL)
+			ind++;
+//		const char * var = getVariable(dollar.content.c_str());
+		p->argv[ind] = (char*)malloc((strlen(var)+1)*sizeof(char));
+		strcpy(p->argv[ind], var);
+//		dollar.content.copy(p->argv[ind], dollar.content.size()); 
+//		p->argv[ind][dollar.content.size()] = 0;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_IN_FILE & redirection) const
 	{
-		std::cout << "redirection_in_file file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_RDONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		j->stdin = pfile;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_OUT_FILE & redirection) const
 	{
-		std::cout << "redirection_out_file file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_CREAT | O_WRONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		j->stdout = pfile;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_NUMBER_IN_FILE & redirection) const
@@ -153,8 +199,16 @@ namespace interpreter {
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_NUMBER_OUT_FILE & redirection) const
 	{
-		std::cout << "redirection_number_out_file number : " << redirection.number << " file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_CREAT | O_WRONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		if(redirection.number == 1) {
+			j->stdout = pfile;
+		} else if(redirection.number == 2) {
+			j->stderr = pfile;
+		}
 	}
 
 	void redirection_list_printer::operator ()(const parser::REDIRECTION & redirection ) const

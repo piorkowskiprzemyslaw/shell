@@ -101,7 +101,6 @@ int main(void)
 				p = p->next;
 			}
 			launch_job(j, 1);
-			first_job = NULL;
 		}
 
 	}

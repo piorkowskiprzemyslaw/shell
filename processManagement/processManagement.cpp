@@ -148,7 +148,6 @@ void do_job_notification (void)
 			} else {
 				first_job = jnext;
 			}
-
 			free_job (j);
 		} else if (job_is_stopped (j) && !j->notified) {
 			format_job_info (j, "stopped");
@@ -344,6 +343,7 @@ job * create_job() {
 	job *actual_job = first_job;
 	job * new_job = (job*) malloc(sizeof(job));
 	new_job->next = NULL;
+	new_job->command = NULL;
 	new_job->first_process = NULL;
 	new_job->stdin = STDIN_FILENO;
 	new_job->stdout = STDOUT_FILENO;
