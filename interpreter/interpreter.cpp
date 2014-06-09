@@ -88,7 +88,6 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
-		printf("asdf\n");
 		process *p = get_last_process();
 		int ind = 0;
 		while(p->argv[ind] != NULL)
@@ -96,7 +95,6 @@ namespace interpreter {
 		p->argv[ind] = (char*)malloc((text.size()+1)*sizeof(char));
 		text.copy(p->argv[ind], text.size()); 
 		p->argv[ind][text.size()] = 0;
-		std::cout << "text: " << text << std::endl;
 	}
 
 	void string_expr_printer::operator()(const parser::NUMBER& number) const
@@ -106,19 +104,23 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::BACK_QUOTE& back_quote) const
 	{
-//		std::cout << "back_quote: " << back_quote.content << std::endl;
-/*		parser::SIMPLE_LIST tokens;
+		parser::SIMPLE_LIST tokens;
 		parser::parse(back_quote.content,tokens);
 		job * j = create_job();
 		interpreter::mini_shell_printer interpreter;
 		interpreter(tokens);
-		process *p = j->first_process;
-		while(p != NULL) {
-			printf("%s\n", p->argv[0]);
-			p = p->next;
-		}
-		launch_job(j, 1);*/
-
+		process *p = get_last_process();
+		int pipe[2];
+		pipe2(pipe, O_NONBLOCK);
+		j->stdout = pipe[1];
+		char buffer[500];
+		launch_job(j, 1);
+		read(pipe[0], buffer, 500);
+		int ind = 0;
+		while(p->argv[ind] != NULL)
+			ind++;
+		p->argv[ind] = (char*)malloc((strlen(buffer)+1)*sizeof(char));
+		strcpy(p->argv[ind], buffer);
 	}
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
