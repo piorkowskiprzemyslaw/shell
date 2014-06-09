@@ -93,5 +93,18 @@ void launch_process( process *p, pid_t pgid, int infile, int outfile, int errfil
  */
 void launch_job( job *j, int foreground );
 
+/** 
+ * Tworzy job i umieszcza go na końcu listy
+ */
+ 
+job * create_job();
+
+/**
+ * Tworzy proces i umieszcza go na koncu listy procesow ostatniego joba
+ */
+process * create_process_in_last_job();
+
+process * get_last_process();
+
 
 #endif /* PROCESSMANAGEMENT_H_ */

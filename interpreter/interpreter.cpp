@@ -6,6 +6,7 @@
  */
 
 #include <interpreter/interpreter.h>
+#include <processManagement/processManagement.h>
 
 namespace interpreter {
 
@@ -42,6 +43,9 @@ namespace interpreter {
 
 	void mini_shell_printer::operator()(const parser::SIMPLE_COMMAND& simple_command) const
 	{
+		process * p = create_process_in_last_job();
+		p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
+		printf("tworzenie procesu\n");
 		this->operator ()(simple_command.simple_command_element);
 		BOOST_FOREACH(const parser::SIMPLE_COMMAND_NODE& node, simple_command.futher_simple_commands)
 		{
@@ -78,6 +82,14 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
+		printf("asdf\n");
+		process *p = get_last_process();
+		int ind = 0;
+		while(p->argv[ind] != NULL)
+			ind++;
+		p->argv[ind] = (char*)malloc((text.size()+1)*sizeof(char));
+		text.copy(p->argv[ind], text.size()); 
+		p->argv[ind][text.size()] = 0;
 		std::cout << "text: " << text << std::endl;
 	}
 

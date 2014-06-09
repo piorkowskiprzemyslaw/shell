@@ -339,3 +339,65 @@ void launch_job( job *j, int foreground )
 		put_job_int_background(j , 0);
 	}
 }
+
+job * create_job() {
+	job *actual_job = first_job;
+	job * new_job = (job*) malloc(sizeof(job));
+	new_job->next = NULL;
+	new_job->first_process = NULL;
+	new_job->stdin = STDIN_FILENO;
+	new_job->stdout = STDOUT_FILENO;
+	new_job->stderr = STDERR_FILENO;
+
+	if(first_job == NULL) {
+		first_job = new_job;
+	} else {
+		while(actual_job->next != NULL)
+			actual_job = actual_job->next;
+		actual_job->next = new_job;
+	}
+	return new_job;
+}
+
+process * create_process_in_last_job() {
+	if(first_job == NULL) 
+		return NULL;
+	process * p = (process*)malloc(sizeof(process));
+	p->next = NULL;
+	p->argv = NULL;
+	p->pid = 0;
+	p->completed = 0;
+	p->stopped = 0;
+	p->status = 0;
+	job * actual_job = first_job;
+	while(actual_job->next != NULL)
+		actual_job = actual_job->next;
+	
+	process * last_process = actual_job->first_process;
+	if(last_process == NULL) {
+		actual_job->first_process = p;
+	} else {
+		while(last_process->next != NULL) {
+			last_process = last_process->next;
+		}
+		last_process->next = p;
+	}
+	return p;
+}
+
+process * get_last_process() {
+	if(first_job == NULL) 
+		return NULL;
+	job * actual_job = first_job;
+	while(actual_job->next != NULL)
+		actual_job = actual_job->next;
+	process * last_process = actual_job->first_process;
+	if(last_process == NULL) {
+		return NULL;
+	} else {
+		while(last_process->next != NULL) {
+			last_process = last_process->next;
+		}
+	}
+	return last_process;
+}

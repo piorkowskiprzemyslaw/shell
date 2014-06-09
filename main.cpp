@@ -92,8 +92,16 @@ int main(void)
 		}
 
 		if( strcmp(inputString, "\n") != 0 && parser::parse(inputString,tokens) ) {
-			interpreter::mini_shell_printer printer;
-			printer(tokens);
+			job * j =create_job();
+			interpreter::mini_shell_printer interpreter;
+			interpreter(tokens);
+			process *p = j->first_process;
+			while(p != NULL) {
+				printf("%s\n", p->argv[0]);
+				p = p->next;
+			}
+			launch_job(j, 1);
+			first_job = NULL;
 		}
 
 	}
