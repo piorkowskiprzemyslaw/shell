@@ -10,6 +10,8 @@
 
 namespace interpreter {
 
+	std::string expression_val;
+
 	void mini_shell_printer::operator()(const parser::SUBSHELL& subshell ) const
 	{
 		std::cout << "subshell: " << subshell.content << std::endl;
@@ -19,6 +21,9 @@ namespace interpreter {
 	{
 		std::cout << "var_name = " << assignment.var_name << " var_val = ";
 		boost::apply_visitor(string_expr_printer(), assignment.var_val);
+		setVariable(assignment.var_name.c_str(), expression_val.c_str());
+		std::cout << "Curent Right side expr: " << getVariable(assignment.var_name.c_str()) << std::endl;
+		expression_val.clear();
 	}
 
 	void mini_shell_printer::operator()(const parser::REDIRECTION& redirection) const
@@ -82,6 +87,9 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
+		//Set Expression
+		expression_val = text;
+
 		printf("asdf\n");
 		process *p = get_last_process();
 		int ind = 0;
@@ -95,6 +103,7 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::NUMBER& number) const
 	{
+		expression_val = std::to_string(number);
 		std::cout << "number: " << number << std::endl;
 	}
 
@@ -105,11 +114,22 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
 	{
+		expression_val = quote.content;
 		std::cout << "quote: " << quote.content << std::endl;
 	}
 
 	void string_expr_printer::operator()(const parser::DOLLAR& dollar) const
 	{
+		const char * value = getVariable(dollar.content.c_str());
+		if (value != NULL)
+		{
+			expression_val = value;
+		}
+		else
+		{
+			expression_val = "";
+			std::cerr << "Unset variable." << std::endl;
+		}
 		std::cout << "dollar: " << dollar.content << std::endl;
 	}
 

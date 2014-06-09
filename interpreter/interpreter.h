@@ -12,6 +12,7 @@
 #include <boost/variant/apply_visitor.hpp>
 
 #include <parser/parser.h>
+#include <variables/variables.h>
 
 namespace interpreter {
 	struct mini_shell_printer {
