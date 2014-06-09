@@ -7,6 +7,10 @@
 
 #include <interpreter/interpreter.h>
 #include <processManagement/processManagement.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 namespace interpreter {
 
@@ -115,14 +119,22 @@ namespace interpreter {
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_IN_FILE & redirection) const
 	{
-		std::cout << "redirection_in_file file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_RDONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		j->stdin = pfile;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_OUT_FILE & redirection) const
 	{
-		std::cout << "redirection_out_file file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_CREAT | O_WRONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		j->stdout = pfile;
 	}
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_NUMBER_IN_FILE & redirection) const
@@ -133,8 +145,16 @@ namespace interpreter {
 
 	void redirection_type_printer::operator()(const parser::REDIRECTION_NUMBER_OUT_FILE & redirection) const
 	{
-		std::cout << "redirection_number_out_file number : " << redirection.number << " file : ";
-		boost::apply_visitor(string_expr_printer(), redirection.file_name);
+		int pfile = open(boost::get<std::string>(redirection.file_name).c_str(), O_CREAT | O_WRONLY , S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR );
+		job * j = first_job;
+		while(j->next != NULL) {
+			j = j->next;
+		}
+		if(redirection.number == 1) {
+			j->stdout = pfile;
+		} else if(redirection.number == 2) {
+			j->stderr = pfile;
+		}
 	}
 
 	void redirection_list_printer::operator ()(const parser::REDIRECTION & redirection ) const
