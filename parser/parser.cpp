@@ -87,13 +87,20 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(std::vector<parser::PIPELINE_NODE>, pipeline_node)
 )
 
+BOOST_FUSION_ADAPT_STRUCT(
+	parser::SIMPLE_LIST,
+	(parser::PIPELINE, pipeline)
+	(boost::optional<std::string>, separator)
+	(std::vector<parser::SIMPLE_LIST_NODE>, futher_pipes)
+)
+
 /*
  * Grammar implementation...
  */
 namespace parser {
 
 	template<typename Iterator>
-	struct mini_shell_grammar : qi::grammar<Iterator, PIPELINE(), ascii::space_type>
+	struct mini_shell_grammar : qi::grammar<Iterator, SIMPLE_LIST(), ascii::space_type>
 	{
 		private:
 			qi::rule<Iterator, std::string(), ascii::space_type> var_name;
@@ -125,9 +132,11 @@ namespace parser {
 			qi::rule<Iterator, PIPELINE_NODE(), ascii::space_type> pipeline_node;
 			qi::rule<Iterator, PIPELINE(), ascii::space_type> pipeline;
 
+			qi::rule<Iterator, SIMPLE_LIST_NODE(), ascii::space_type> simple_list_node;
+			qi::rule<Iterator, SIMPLE_LIST(), ascii::space_type> simple_list;
 
 		public:
-			mini_shell_grammar() : mini_shell_grammar::base_type(pipeline) {
+			mini_shell_grammar() : mini_shell_grammar::base_type(simple_list) {
 				using qi::lit;
 				using qi::lexeme;
 				using ascii::char_;
@@ -183,11 +192,17 @@ namespace parser {
 				 */
 				pipeline_node %= command | pipeline;
 				pipeline %= command >> *( lit('|') >> pipeline_node );
+
+				/*
+				 * simple list ...
+				 */
+				simple_list_node %= pipeline | simple_list;
+				simple_list %= pipeline >> -( char_(';') | char_('&') ) >> *( simple_list_node );
 			}
 
 	};
 
-	int parse(const std::string & inputString, PIPELINE & toks) {
+	int parse(const std::string & inputString, SIMPLE_LIST & toks) {
 		using boost::spirit::ascii::space;
 		std::string::const_iterator begin = inputString.begin();
 		std::string::const_iterator end = inputString.end();

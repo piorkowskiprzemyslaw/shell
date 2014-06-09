@@ -23,6 +23,7 @@ namespace interpreter {
 		void operator()(const parser::SIMPLE_COMMAND& simple_command) const;
 		void operator()(const parser::COMMAND& command) const;
 		void operator()(const parser::PIPELINE& pipeline) const;
+		void operator()(const parser::SIMPLE_LIST& simple_list) const;
 	};
 
 	struct string_expr_printer : boost::static_visitor<> {
@@ -65,6 +66,11 @@ namespace interpreter {
 	struct pipeline_sequence_printer : boost::static_visitor<> {
 		void operator()(const parser::COMMAND& command) const;
 		void operator()(const parser::PIPELINE& pipeline) const;
+	};
+
+	struct simple_list_node_printer : boost::static_visitor<> {
+		void operator()(const parser::PIPELINE& pipeline) const;
+		void operator()(const parser::SIMPLE_LIST& simple_list) const;
 	};
 }
 

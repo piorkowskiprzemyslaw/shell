@@ -17,6 +17,7 @@
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -123,16 +124,26 @@ namespace parser {
 	typedef boost::variant< boost::recursive_wrapper<PIPELINE>, COMMAND > PIPELINE_NODE;
 
 	// <pipeline> ::= <command> '|' <pipeline>
-	//				| <pipeline>
+	//				| <command>
 	struct PIPELINE {
 		COMMAND command;
 		std::vector<PIPELINE_NODE> pipeline_node;
 	};
 
+	struct SIMPLE_LIST;
+
+	typedef boost::variant< boost::recursive_wrapper<SIMPLE_LIST> , PIPELINE > SIMPLE_LIST_NODE;
+
+	struct SIMPLE_LIST {
+		PIPELINE pipeline;
+		boost::optional<std::string> separator;
+		std::vector<SIMPLE_LIST_NODE> futher_pipes;
+	};
+
 	/*
 	 * Function declaration goes here...
 	 */
-	int parse(const std::string & inputString, PIPELINE & toks);
+	int parse(const std::string & inputString, SIMPLE_LIST & toks);
 }
 
 #endif /* PARSER_H_ */

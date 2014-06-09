@@ -63,6 +63,18 @@ namespace interpreter {
 		}
 	}
 
+	void mini_shell_printer::operator()(const parser::SIMPLE_LIST&  simple_list) const
+	{
+		this->operator ()(simple_list.pipeline);
+		if(simple_list.separator){
+			std::cout << "separator " << simple_list.separator.get() << std::endl;
+		}
+		BOOST_FOREACH(const parser::SIMPLE_LIST_NODE& node, simple_list.futher_pipes)
+		{
+			boost::apply_visitor(simple_list_node_printer(), node);
+		}
+	}
+
 
 	void string_expr_printer::operator()(const parser::TEXT& text) const
 	{
@@ -172,6 +184,16 @@ namespace interpreter {
 	void pipeline_sequence_printer::operator()(const parser::PIPELINE& pipeline) const
 	{
 		mini_shell_printer()(pipeline);
+	}
+
+	void simple_list_node_printer::operator()(const parser::PIPELINE& pipeline) const
+	{
+		mini_shell_printer()(pipeline);
+	}
+
+	void simple_list_node_printer::operator()(const parser::SIMPLE_LIST& simple_list) const
+	{
+		mini_shell_printer()(simple_list);
 	}
 }
 
