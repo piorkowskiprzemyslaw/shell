@@ -271,14 +271,18 @@ void launch_local_process( process *p, pid_t pgid, int infile, int outfile, int 
 {
 	if(strcmp(p->argv[0], "cd") == 0)
 		changeDir(p->argv[1]);
-	if(strcmp(p->argv[0], "echo") == 0)
+	if(strcmp(p->argv[0], "echo") == 0) 
 		echoString(p->argv[1]);
+	if(strcmp(p->argv[0], "read") == 0)
+		readVariables(p->argv[1]);
 }
 
 bool is_local_process( process *p) {
 	if(strcmp(p->argv[0], "cd") == 0)
 		return true;
 	if(strcmp(p->argv[0], "echo") == 0)
+		return true;
+	if(strcmp(p->argv[0], "read") == 0)
 		return true;
 	return false;
 }

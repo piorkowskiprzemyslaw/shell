@@ -132,12 +132,12 @@ namespace interpreter {
 
 	void string_expr_printer::operator()(const parser::BACK_QUOTE& back_quote) const
 	{
+		process *p = get_last_process();
 		parser::SIMPLE_LIST tokens;
 		parser::parse(back_quote.content,tokens);
 		job * j = create_job();
 		interpreter::mini_shell_printer interpreter;
 		interpreter(tokens);
-		process *p = get_last_process();
 		int pipe[2];
 		pipe2(pipe, O_NONBLOCK);
 		j->stdout = pipe[1];
@@ -149,7 +149,6 @@ namespace interpreter {
 			ind++;
 		p->argv[ind] = (char*)malloc((strlen(buffer)+1)*sizeof(char));
 		strcpy(p->argv[ind], buffer);
-		printf("%s\n", p->argv[ind]);
 	}
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
