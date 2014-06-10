@@ -275,7 +275,8 @@ void launch_job( job *j, int foreground )
 	process * p;
 	pid_t pid;
 	int pipeIO[2], infile, outfile;
-	j->foreground = foreground;
+//	j->foreground = foreground;
+	foreground = j->foreground;
 
 	infile = j->stdin;
 	for( p = j->first_process ; p ; p=p->next ){
@@ -348,6 +349,7 @@ job * create_job() {
 	new_job->stdin = STDIN_FILENO;
 	new_job->stdout = STDOUT_FILENO;
 	new_job->stderr = STDERR_FILENO;
+	new_job->foreground = 1;
 
 	if(first_job == NULL) {
 		first_job = new_job;

@@ -59,7 +59,8 @@ namespace interpreter {
 	{
 		if(boost::get<parser::STRING_EXPR>(&simple_command.simple_command_element)) {
 			process * p = create_process_in_last_job();
-			p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 0);
+
+			p->argv = (char**)calloc((simple_command.futher_simple_commands.size()+2)*sizeof(char*), 1);
 		}
 		this->operator ()(simple_command.simple_command_element);
 		BOOST_FOREACH(const parser::SIMPLE_COMMAND_NODE& node, simple_command.futher_simple_commands)
@@ -86,6 +87,14 @@ namespace interpreter {
 	{
 		this->operator ()(simple_list.pipeline);
 		if(simple_list.separator){
+			if(simple_list.separator.get() == "&") {
+				job *j = first_job;
+				while(j->next != NULL) {
+					j = j->next;
+				}
+				j->foreground = 0;
+			}
+				
 			std::cout << "separator " << simple_list.separator.get() << std::endl;
 		}
 		BOOST_FOREACH(const parser::SIMPLE_LIST_NODE& node, simple_list.futher_pipes)
@@ -108,9 +117,11 @@ namespace interpreter {
 		int ind = 0;
 		while(p->argv[ind] != NULL)
 			ind++;
+
 		p->argv[ind] = (char*)malloc((text.size()+1)*sizeof(char));
 		text.copy(p->argv[ind], text.size());
 		p->argv[ind][text.size()] = 0;
+
 	}
 
 	void string_expr_printer::operator()(const parser::NUMBER& number) const
@@ -138,6 +149,7 @@ namespace interpreter {
 			ind++;
 		p->argv[ind] = (char*)malloc((strlen(buffer)+1)*sizeof(char));
 		strcpy(p->argv[ind], buffer);
+		printf("%s\n", p->argv[ind]);
 	}
 
 	void string_expr_printer::operator()(const parser::QUOTE& quote) const
@@ -160,6 +172,7 @@ namespace interpreter {
 			}
 			return;
 		}
+
 		process *p = get_last_process();
 		int ind = 0;
 		while(p->argv[ind] != NULL)
