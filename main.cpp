@@ -93,13 +93,10 @@ int main(void)
 
 		if( strcmp(inputString, "\n") != 0 && parser::parse(inputString,tokens) ) {
 			job * j =create_job();
+			j->command = (char*) malloc((strlen(inputString)+1)*sizeof(char));
+			strcpy(j->command, inputString);
 			interpreter::mini_shell_printer interpreter;
 			interpreter(tokens);
-			process *p = j->first_process;
-			while(p != NULL) {
-				printf("%s\n", p->argv[0]);
-				p = p->next;
-			}
 			launch_job(j, 1);
 		}
 

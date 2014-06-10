@@ -1,6 +1,6 @@
 
 #include <processManagement/processManagement.h>
-
+#include <commands/commands.h>
 /**
  * Znajdź pracę o zadanym pgid
  */
@@ -267,6 +267,23 @@ void launch_process( process *p, pid_t pgid, int infile, int outfile, int errfil
 	exit(1);
 }
 
+void launch_local_process( process *p, pid_t pgid, int infile, int outfile, int errfile, int foreground)
+{
+	if(strcmp(p->argv[0], "cd") == 0)
+		changeDir(p->argv[1]);
+	if(strcmp(p->argv[0], "echo") == 0)
+		echoString(p->argv[1]);
+}
+
+bool is_local_process( process *p) {
+	if(strcmp(p->argv[0], "cd") == 0)
+		return true;
+	if(strcmp(p->argv[0], "echo") == 0)
+		return true;
+	return false;
+}
+
+
 /**
  * Uruchom joba
  */
@@ -291,29 +308,33 @@ void launch_job( job *j, int foreground )
 		} else {
 			outfile = j->stdout;
 		}
-
-		pid = fork();
-
-		if( pid == 0 ) {
-			// dziecko
-			launch_process(p, j->pgid, infile, outfile, j->stderr, foreground);
-		} else if ( pid < 0 ) {
-			// niepowodzenie forka
-			perror("fork error");
-			exit(1);
+		if(is_local_process(p)) {
+			launch_local_process(p, j->pgid, infile, outfile, j->stderr, foreground);
 		} else {
-			// proces macierzysty
 
-			p->pid = pid;
-			if( is_shell_interactive ) {
+			pid = fork();
 
-				// ustawienie grupy procesów dla tego joba.
-				// pgid jest rowne pid pierwszego procesu w jobie
-				if( !j->pgid ) {
-					j->pgid = pid;
+			if( pid == 0 ) {
+				// dziecko
+				launch_process(p, j->pgid, infile, outfile, j->stderr, foreground);
+			} else if ( pid < 0 ) {
+				// niepowodzenie forka
+				perror("fork error");
+				exit(1);
+			} else {
+				// proces macierzysty
+
+				p->pid = pid;
+				if( is_shell_interactive ) {
+
+					// ustawienie grupy procesów dla tego joba.
+					// pgid jest rowne pid pierwszego procesu w jobie
+					if( !j->pgid ) {
+						j->pgid = pid;
+					}
+
+					setpgid(pid, j->pgid);
 				}
-
-				setpgid(pid, j->pgid);
 			}
 		}
 
