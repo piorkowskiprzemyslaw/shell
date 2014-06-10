@@ -22,6 +22,12 @@ namespace interpreter {
 	void mini_shell_printer::operator()(const parser::SUBSHELL& subshell ) const
 	{
 		std::cout << "subshell: " << subshell.content << std::endl;
+/*		char *shell_app = "./shell";
+		process *p = (process*) malloc(sizeof(process));
+		p->argv = (char**)malloc(sizeof(char*)*2);
+		p->argv[0] = (char*)malloc(sizeof(char)*strlen(shell_app));
+		p->argv[1] = 0;*/
+
 	}
 
 	void mini_shell_printer::operator ()(const parser::ASSIGNMENT_WORD & assignment) const
@@ -37,7 +43,7 @@ namespace interpreter {
 
 	void mini_shell_printer::operator()(const parser::REDIRECTION& redirection) const
 	{
-		std::cout << "redirection ";
+//		std::cout << "redirection ";
 		boost::apply_visitor(redirection_type_printer(), redirection.type);
 	}
 
@@ -94,8 +100,9 @@ namespace interpreter {
 				}
 				j->foreground = 0;
 			}
-				
-			std::cout << "separator " << simple_list.separator.get() << std::endl;
+			else {
+				std::cout << "separator " << simple_list.separator.get() << std::endl;
+			}
 		}
 		BOOST_FOREACH(const parser::SIMPLE_LIST_NODE& node, simple_list.futher_pipes)
 		{
@@ -160,6 +167,7 @@ namespace interpreter {
 	void string_expr_printer::operator()(const parser::DOLLAR& dollar) const
 	{
 		const char * var = getVariable(dollar.content.c_str());
+
 		if (assignment_flag)
 		{
 			if (var != NULL)
@@ -171,6 +179,8 @@ namespace interpreter {
 			}
 			return;
 		}
+		if(var == NULL) 
+			var = "";
 
 		process *p = get_last_process();
 		int ind = 0;
